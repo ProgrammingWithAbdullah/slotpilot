@@ -3,6 +3,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
+import { AppLayout } from '@/app/AppLayout';
+import { RequireAuth } from './RequireAuth';
 import { apiError, server } from '@/test/server';
 import { renderApp } from '@/test/render';
 import { user } from '@/test/fixtures';
@@ -46,6 +48,29 @@ describe('LoginPage', () => {
     await userEvent.type(screen.getByLabelText('Password'), 'Password123!');
     await userEvent.click(screen.getByRole('button', { name: 'Log in' }));
     expect(await screen.findByText('Arrived')).toBeInTheDocument();
+  });
+});
+
+describe('log out', () => {
+  it('sends a signed-in user to the login page', async () => {
+    server.use(http.post('*/api/v1/auth/logout', () => new HttpResponse(null, { status: 204 })));
+    renderApp(
+      <Routes>
+        <Route
+          element={
+            <RequireAuth>
+              <AppLayout />
+            </RequireAuth>
+          }
+        >
+          <Route path="/" element={<p>Dashboard</p>} />
+        </Route>
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>,
+    );
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Log out' }));
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
   });
 });
 

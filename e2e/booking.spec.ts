@@ -56,6 +56,38 @@ test.describe('SlotPilot', () => {
     ).toBeVisible();
   });
 
+  test('booking with the form keeps every appointment in the list visible', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Fill in the demo account' }).click();
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL('/');
+    const cards = page.getByRole('tabpanel').getByRole('listitem');
+    await expect(cards.first()).toBeVisible();
+    const before = await cards.count();
+
+    for (let n = 0; n < 2; n++) {
+      await page.getByRole('button', { name: 'Book appointment' }).click();
+      const dialog = page.getByRole('dialog');
+      await dialog.getByRole('radiogroup', { name: 'Service' }).getByRole('radio').nth(n).click();
+      await dialog
+        .getByRole('radiogroup', { name: 'Day' })
+        .getByRole('radio', { disabled: false })
+        .nth(n + 1)
+        .click();
+      await dialog.getByRole('radiogroup', { name: 'Time' }).getByRole('radio').first().click();
+      await dialog.getByRole('button', { name: 'Confirm booking' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(cards).toHaveCount(before + n + 1);
+    }
+
+    // Every card, old and new, must end up visible: none may stay hidden by an entrance animation.
+    for (const card of await cards.all()) {
+      await card.scrollIntoViewIfNeeded();
+      await expect(card).toBeVisible();
+      await expect(card).toHaveCSS('opacity', '1');
+    }
+  });
+
   test('protected API routes reject anonymous requests with a JSON error', async ({ request }) => {
     const res = await request.get('/api/v1/appointments');
     expect(res.status()).toBe(401);

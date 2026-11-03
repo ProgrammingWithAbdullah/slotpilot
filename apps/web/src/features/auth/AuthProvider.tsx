@@ -25,8 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const me = useQuery({ queryKey: queryKeys.me, queryFn: ({ signal }) => authApi.me(signal), staleTime: 5 * 60_000 });
 
   const clearSession = useCallback(() => {
-    // Drop every cached query so no previous user's data stays in memory.
-    qc.removeQueries({ predicate: (q) => q.queryKey[0] !== 'business' });
+    // Drop every cached query so no previous user's data stays in memory. The session query
+    // itself stays (it is only emptied): removing it would detach the observer that
+    // AuthProvider is watching, and the UI would never notice the user logged out.
+    qc.removeQueries({ predicate: (q) => !['business', 'auth'].includes(String(q.queryKey[0])) });
     qc.setQueryData(queryKeys.me, null);
   }, [qc]);
 

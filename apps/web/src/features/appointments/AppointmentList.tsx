@@ -19,22 +19,23 @@ export function AppointmentList({ scope }: { scope: 'upcoming' | 'past' }) {
   const listRef = useRef<HTMLUListElement>(null);
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
 
-  // Cards rise in as they scroll into view, a few at a time. Cards that already
-  // played keep their place when the list updates (a new booking, "Show more").
+  // Cards rise in as they reach the viewport. Nothing is ever hidden ahead of time:
+  // each card stays visible unless a tween is playing on it, so a refetch, a socket
+  // update or an interrupted animation can never leave a card stuck invisible.
+  // Cards that already played are left alone when the list updates.
   useMotion(
     () => {
       if (!listRef.current) return;
       const fresh = gsap.utils.toArray<HTMLElement>('[data-appointment]:not([data-revealed])', listRef.current);
       if (fresh.length === 0) return;
-      gsap.set(fresh, { autoAlpha: 0, y: 18 });
-      ScrollTrigger.batch(fresh, {
-        start: 'top 95%',
-        once: true,
-        onEnter: (batch) => {
-          batch.forEach((el) => el.setAttribute('data-revealed', ''));
-          gsap.to(batch, { autoAlpha: 1, y: 0, duration: 0.8, ease: EASE_OUT, stagger: 0.06, overwrite: true });
-        },
-      });
+      fresh.forEach((el) => el.setAttribute('data-revealed', ''));
+      const rise = (targets: Element[]) =>
+        gsap.from(targets, { autoAlpha: 0, y: 18, duration: 0.8, ease: EASE_OUT, stagger: 0.06 });
+
+      const inView = fresh.filter((el) => ScrollTrigger.isInViewport(el));
+      if (inView.length) rise(inView);
+      const below = fresh.filter((el) => !inView.includes(el));
+      if (below.length) ScrollTrigger.batch(below, { start: 'top 95%', once: true, onEnter: rise });
     },
     { scope: listRef, dependencies: [items.map((a) => a.id).join()] },
   );
