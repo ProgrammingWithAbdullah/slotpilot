@@ -1,3 +1,4 @@
+import type { AppointmentDto } from './appointments.js';
 import { z } from 'zod';
 
 export const CHAT_STATES = ['collecting', 'confirming', 'booked', 'closed'] as const;
@@ -19,7 +20,7 @@ export interface BookingDraft {
   notes?: string;
 }
 
-export type MessageCard = 'booking_summary' | 'fallback_form' | 'booked';
+export type MessageCard = 'booking_summary' | 'fallback_form' | 'booked' | 'cancel_options';
 
 export interface MessageMetadata {
   card?: MessageCard;
@@ -27,6 +28,10 @@ export interface MessageMetadata {
   suggestions?: string[];
   /** Alternative free start times (ISO) when the requested one is taken. */
   alternatives?: string[];
+  /** Every free start time (ISO) on the draft's day, shown as a compact time picker. */
+  timeOptions?: string[];
+  /** Upcoming appointments the user can cancel (card "cancel_options"). */
+  appointments?: AppointmentDto[];
   draft?: BookingDraft;
   fallbackReason?: 'ai_error' | 'invalid_output' | 'no_progress' | 'ai_disabled';
   appointmentId?: string;

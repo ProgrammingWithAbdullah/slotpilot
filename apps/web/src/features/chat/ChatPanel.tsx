@@ -11,6 +11,8 @@ import { useChat } from './useChat';
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 import { SuggestionChips } from './SuggestionChips';
+import { TimeOptions } from './TimeOptions';
+import { useBusinessTimezone } from '@/lib/useBusiness';
 import { Composer } from './Composer';
 import { draftToInitial } from './draft';
 
@@ -23,6 +25,7 @@ const statusText: Record<SocketStatus, string> = {
 export function ChatPanel({ compactHeader = false }: { compactHeader?: boolean }) {
   const chat = useChat();
   const openBooking = useOpenBooking();
+  const tz = useBusinessTimezone();
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
   const session = chat.session.data;
@@ -120,6 +123,15 @@ export function ChatPanel({ compactHeader = false }: { compactHeader?: boolean }
         {last?.role === 'assistant' && !chat.awaitingReply && (last.metadata.suggestions?.length ?? 0) > 0 && (
           <SuggestionChips
             suggestions={last.metadata.suggestions!}
+            disabled={chat.send.isPending}
+            onPick={(s) => void send(s).catch(() => undefined)}
+          />
+        )}
+        {last?.role === 'assistant' && !chat.awaitingReply && (last.metadata.timeOptions?.length ?? 0) > 0 && (
+          <TimeOptions
+            key={last.id}
+            times={last.metadata.timeOptions!}
+            timezone={tz}
             disabled={chat.send.isPending}
             onPick={(s) => void send(s).catch(() => undefined)}
           />

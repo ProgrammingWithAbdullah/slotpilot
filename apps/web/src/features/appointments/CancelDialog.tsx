@@ -12,10 +12,12 @@ export function CancelDialog({
   appointment,
   timezone,
   onClose,
+  onCancelled,
 }: {
   appointment: AppointmentDto | null;
   timezone: string;
   onClose: () => void;
+  onCancelled?: (appointment: AppointmentDto) => void;
 }) {
   const cancel = useCancelAppointment();
   // Keep showing the last appointment while the dialog plays its exit animation.
@@ -57,6 +59,7 @@ export function CancelDialog({
               onClick={async () => {
                 await cancel.mutateAsync(shown.id);
                 toast.success('Appointment cancelled');
+                onCancelled?.(shown);
                 onClose();
               }}
             >

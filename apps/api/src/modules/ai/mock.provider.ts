@@ -56,7 +56,8 @@ export function createMockProvider(): LlmProvider {
       const hasFields = Boolean(service || date || time);
 
       let intent = 'book';
-      if (!hasFields && /^(yes|yep|confirm|book it|sounds good)\b/.test(lower)) intent = 'confirm';
+      if (/\bcancel\b/.test(lower)) intent = 'cancel';
+      else if (!hasFields && /^(yes|yep|confirm|book it|sounds good)\b/.test(lower)) intent = 'confirm';
       else if (!hasFields && /^(hi|hello|hey|thanks|thank you)\b/.test(lower)) intent = 'smalltalk';
       else if (!hasFields && /\?$/.test(lower)) intent = 'question';
 

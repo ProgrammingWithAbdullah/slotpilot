@@ -42,6 +42,38 @@ test.describe('SlotPilot', () => {
     await expect(page.getByText('Appointment cancelled')).toBeVisible();
   });
 
+  test('the assistant offers every free time and can find an appointment to cancel', async ({ page }) => {
+    await page.goto('/signup');
+    await page.getByLabel('Full name').fill('Casey Cancel');
+    await page.getByLabel('Email').fill(`e2e-cancel-${Date.now()}@example.com`);
+    await page.getByLabel('Password').fill('Password123!');
+    await page.getByRole('button', { name: 'Create account' }).click();
+
+    const chat = page.getByLabel('Booking assistant');
+    await expect(chat.getByText('Online')).toBeVisible();
+    const composer = chat.getByLabel('Message the booking assistant');
+    await composer.fill('a checkup next thursday');
+    await composer.press('Enter');
+
+    // All free times, compact: a few first, the rest one click away.
+    const picker = chat.getByRole('group', { name: 'Free times' });
+    await expect(picker).toBeVisible();
+    await picker.getByRole('button', { name: /Show all \d+ times/ }).click();
+    await picker.getByRole('button', { name: '4:30 PM' }).click();
+    await chat.getByLabel('Booking summary').getByRole('button', { name: 'Confirm' }).click();
+    const appointment = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Checkup' }) });
+    await expect(appointment).toBeVisible();
+
+    // Cancel through the chat: the assistant lists it, the user confirms.
+    await composer.fill('please cancel my checkup');
+    await composer.press('Enter');
+    const options = chat.getByRole('list', { name: 'Appointments you can cancel' });
+    await options.getByRole('button', { name: /Cancel/ }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel appointment' }).click();
+    await expect(options.getByText('Cancelled')).toBeVisible();
+    await expect(appointment).toHaveCount(0);
+  });
+
   test('the demo account can sign in and sees its seeded appointments', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/login/);

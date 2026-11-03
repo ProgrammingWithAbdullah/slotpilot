@@ -18,7 +18,7 @@ const nullableText = (max: number) =>
 
 /** What we accept from the model. Anything else is rejected as invalid output. */
 export const extractionSchema = z.object({
-  intent: z.enum(['book', 'confirm', 'question', 'smalltalk', 'out_of_scope']),
+  intent: z.enum(['book', 'confirm', 'cancel', 'question', 'smalltalk', 'out_of_scope']),
   fields: z
     .object({
       service: nullableText(80),
@@ -37,7 +37,7 @@ export type Extraction = z.infer<typeof extractionSchema>;
 const responseSchema: ResponseSchema = {
   type: 'object',
   properties: {
-    intent: { type: 'string', enum: ['book', 'confirm', 'question', 'smalltalk', 'out_of_scope'] },
+    intent: { type: 'string', enum: ['book', 'confirm', 'cancel', 'question', 'smalltalk', 'out_of_scope'] },
     fields: {
       type: 'object',
       properties: {

@@ -1,13 +1,29 @@
 import { DateTime } from 'luxon';
-import type { BookingDraft, BusinessDto, ChatState, MessageMetadata, ServiceDto } from '@slotpilot/shared';
+import type {
+  AppointmentDto,
+  BookingDraft,
+  BusinessDto,
+  ChatState,
+  MessageMetadata,
+  ServiceDto,
+} from '@slotpilot/shared';
 import type { EventBus } from '../../lib/events.js';
 import type { Logger } from '../../lib/logger.js';
 import type { ServicesRepository } from '../catalog/services.repository.js';
 import type { AvailabilityService } from '../catalog/availability.service.js';
+import type { AppointmentsRepository } from '../appointments/appointments.repository.js';
 import { checkSlotRules, describeHours, formatDate, formatTime, toIso } from '../catalog/availability.js';
 import type { BookingExtractor, Extraction } from '../ai/booking-extractor.js';
 import type { ChatRepository, SessionRecord } from './chat.repository.js';
-import { NO_PROGRESS_LIMIT, applyExtraction, draftStart, listAnd, missingFields, type Issue } from './booking-draft.js';
+import {
+  NO_PROGRESS_LIMIT,
+  applyExtraction,
+  draftStart,
+  listAnd,
+  missingFields,
+  resolveService,
+  type Issue,
+} from './booking-draft.js';
 
 /** How much conversation the model sees. Facts older than this live on in the structured draft. */
 export const HISTORY_WINDOW = 10;
@@ -20,8 +36,11 @@ interface TurnDecision {
   metadata: MessageMetadata;
 }
 
-/** Model replies must never claim a booking happened: only the Confirm button books. */
-const CLAIMS_BOOKING = /\b(booked|confirmed|scheduled|reserved|all set)\b/i;
+/** Model replies must never claim a booking or cancellation happened: only the buttons do that. */
+const CLAIMS_BOOKING = /\b(booked|confirmed|scheduled|reserved|all set|cancell?ed)\b/i;
+
+/** How many upcoming appointments the cancel card lists. */
+const CANCEL_LIST_LIMIT = 10;
 
 /**
  * Orchestrates one conversational turn: AI extraction -> business validation -> next state -> reply.
@@ -31,6 +50,7 @@ export function createBookingAssistant(deps: {
   business: BusinessDto;
   services: ServicesRepository;
   availability: AvailabilityService;
+  appointments: AppointmentsRepository;
   extractor: BookingExtractor;
   chat: ChatRepository;
   events: EventBus;
@@ -62,17 +82,17 @@ export function createBookingAssistant(deps: {
     };
   }
 
-  async function timeSuggestions(services: ServiceDto[], draft: BookingDraft): Promise<string[]> {
+  /** Every free start time (ISO) for the draft's service and day. The UI shows them as a compact picker. */
+  async function freeTimes(services: ServiceDto[], draft: BookingDraft): Promise<string[]> {
     const service = services.find((s) => s.id === draft.serviceId);
     if (!service || !draft.date) return [];
-    const slots = await deps.availability.slotsFor(service, draft.date);
-    return slots.slice(0, 4).map((s) => formatTime(DateTime.fromISO(s, { zone: tz })));
+    return deps.availability.slotsFor(service, draft.date);
   }
 
   async function nextQuestion(
     services: ServiceDto[],
     draft: BookingDraft,
-  ): Promise<{ text: string; suggestions: string[] }> {
+  ): Promise<{ text: string; suggestions: string[]; timeOptions?: string[] }> {
     const missing = missingFields(draft);
     if (missing[0] === 'service') {
       return {
@@ -86,13 +106,53 @@ export function createBookingAssistant(deps: {
         suggestions: ['Tomorrow', 'This Saturday', 'Next Monday'],
       };
     }
-    const suggestions = await timeSuggestions(services, draft);
+    const timeOptions = await freeTimes(services, draft);
     const day = DateTime.fromISO(draft.date!, { zone: tz });
+    return timeOptions.length
+      ? { text: `What time on ${formatDate(day)}? Pick one of the free times below.`, suggestions: [], timeOptions }
+      : {
+          text: `Sorry, ${formatDate(day)} is fully booked. Could you pick another day?`,
+          suggestions: ['Tomorrow', 'Next Monday'],
+        };
+  }
+
+  /**
+   * "Cancel my cleaning on Friday": list the user's upcoming appointments (narrowed by what they said).
+   * The assistant never cancels; the user presses Cancel on one and confirms, like on the dashboard.
+   */
+  async function cancelOptions(
+    userId: string,
+    services: ServiceDto[],
+    fields: Extraction['fields'],
+  ): Promise<Pick<TurnDecision, 'content' | 'metadata'>> {
+    const upcoming = await deps.appointments.list({
+      businessId: business.id,
+      userId,
+      scope: 'upcoming',
+      limit: CANCEL_LIST_LIMIT,
+    });
+    if (upcoming.length === 0) {
+      return {
+        content: "You don't have any upcoming appointments to cancel. Would you like to book one?",
+        metadata: { suggestions: ['Book a checkup tomorrow morning', 'What services do you offer?'] },
+      };
+    }
+    const match = fields.service ? resolveService(fields.service, services) : null;
+    const serviceId = match?.kind === 'match' ? match.service.id : undefined;
+    const matches = (a: AppointmentDto) =>
+      (!serviceId || a.service.id === serviceId) &&
+      (!fields.date || DateTime.fromISO(a.startsAt, { zone: tz }).toISODate() === fields.date);
+    const narrowed = upcoming.filter(matches);
+    const list = narrowed.length > 0 ? narrowed : upcoming;
+    const intro =
+      narrowed.length === 0 && (serviceId || fields.date)
+        ? "I couldn't find an appointment matching that. Here are all your upcoming ones."
+        : list.length === 1
+          ? 'Here is your upcoming appointment.'
+          : 'Here are your upcoming appointments.';
     return {
-      text: suggestions.length
-        ? `What time on ${formatDate(day)}? Here are some free times.`
-        : `Sorry, ${formatDate(day)} is fully booked. Could you pick another day?`,
-      suggestions,
+      content: `${intro} Tap Cancel on the one you'd like to cancel.`,
+      metadata: { card: 'cancel_options', appointments: list },
     };
   }
 
@@ -173,6 +233,16 @@ export function createBookingAssistant(deps: {
     const hasFields = Boolean(ex.fields.service || ex.fields.date || ex.fields.time || ex.fields.notes);
     const modelReply = ex.reply && !CLAIMS_BOOKING.test(ex.reply) ? ex.reply : null;
 
+    // Cancelling: show the matching appointments with a Cancel button each. The draft stays as it was.
+    if (ex.intent === 'cancel') {
+      return {
+        draft: startingDraft,
+        state: baseState,
+        failedTurns,
+        ...(await cancelOptions(userId, services, ex.fields)),
+      };
+    }
+
     // Questions and small talk: answer, keep the draft, don't count as a failed booking turn.
     if (!hasFields && (ex.intent === 'question' || ex.intent === 'smalltalk' || ex.intent === 'out_of_scope')) {
       const q = await nextQuestion(services, startingDraft);
@@ -185,7 +255,7 @@ export function createBookingAssistant(deps: {
         state: baseState,
         failedTurns,
         content: reply,
-        metadata: { suggestions: q.suggestions.slice(0, 4) },
+        metadata: { suggestions: q.suggestions.slice(0, 4), ...(q.timeOptions ? { timeOptions: q.timeOptions } : {}) },
       };
     }
 
@@ -246,7 +316,11 @@ export function createBookingAssistant(deps: {
       state: 'collecting',
       failedTurns: nextFailed,
       content,
-      metadata: { suggestions: suggestions.slice(0, 4), draft, ...(alternatives.length ? { alternatives } : {}) },
+      metadata: {
+        suggestions: suggestions.slice(0, 4),
+        draft,
+        ...(alternatives.length ? { alternatives } : q.timeOptions ? { timeOptions: q.timeOptions } : {}),
+      },
     };
   }
 

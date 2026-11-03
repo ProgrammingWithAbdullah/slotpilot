@@ -103,4 +103,54 @@ describe('ChatPanel', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('radio', { name: /Cleaning/ })).toHaveAttribute('aria-checked', 'true');
   });
+  it('shows every free time compactly, expands on demand, and sends the picked time', async () => {
+    // 9:00 to 16:00 every 30 minutes in Asia/Karachi (UTC+5).
+    const times = Array.from({ length: 15 }, (_, i) =>
+      new Date(Date.UTC(2030, 0, 8, 4, 0) + i * 30 * 60_000).toISOString(),
+    );
+    const messages = chatBackend(() => ({
+      content: 'What time on Tuesday 8 January?',
+      metadata: { timeOptions: times },
+    }));
+    renderApp(<ChatPanel />);
+    await screen.findByText("Hi! I'm the booking assistant.");
+    await waitFor(() => expect(screen.getByLabelText('Message the booking assistant')).toBeEnabled());
+    await userEvent.type(screen.getByLabelText('Message the booking assistant'), 'cleaning tomorrow{Enter}');
+
+    const picker = await screen.findByRole('group', { name: 'Free times' }, { timeout: 5000 });
+    expect(within(picker).getAllByRole('button', { name: /AM|PM/ })).toHaveLength(8);
+    await userEvent.click(within(picker).getByRole('button', { name: /Show all 15 times/ }));
+    expect(within(picker).getAllByRole('button', { name: /AM|PM/ })).toHaveLength(15);
+    expect(within(picker).getByText('Afternoon')).toBeInTheDocument();
+
+    await userEvent.click(within(picker).getByRole('button', { name: '4:00 PM' }));
+    await waitFor(() => expect(messages.some((m) => m.role === 'user' && m.content === '4:00 PM')).toBe(true));
+  });
+
+  it('lists appointments to cancel and cancels only after the user confirms', async () => {
+    let cancelledId: string | undefined;
+    chatBackend(() => ({
+      content: "Here is your upcoming appointment. Tap Cancel on the one you'd like to cancel.",
+      metadata: { card: 'cancel_options', appointments: [appointment] },
+    }));
+    server.use(
+      http.post('*/api/v1/appointments/:id/cancel', ({ params }) => {
+        cancelledId = params.id as string;
+        return HttpResponse.json({ data: { ...appointment, status: 'cancelled' } });
+      }),
+    );
+    renderApp(<ChatPanel />);
+    await screen.findByText("Hi! I'm the booking assistant.");
+    await waitFor(() => expect(screen.getByLabelText('Message the booking assistant')).toBeEnabled());
+    await userEvent.type(screen.getByLabelText('Message the booking assistant'), 'cancel my appointment{Enter}');
+
+    const list = await screen.findByRole('list', { name: 'Appointments you can cancel' }, { timeout: 5000 });
+    await userEvent.click(within(list).getByRole('button', { name: /Cancel/ }));
+    expect(cancelledId).toBeUndefined();
+    await userEvent.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel appointment' }),
+    );
+    await waitFor(() => expect(cancelledId).toBe(appointment.id));
+    expect(await within(list).findByText('Cancelled')).toBeInTheDocument();
+  });
 });

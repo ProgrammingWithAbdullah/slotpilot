@@ -85,7 +85,10 @@ describe('booking through conversation', () => {
 
     const r2 = await say(t, agent, sessionId, 'tomorrow');
     expect(r2.content).toMatch(/what time/i);
-    expect(r2.metadata.suggestions).toEqual(['9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM']);
+    // Every free time of the day, for the compact time picker (45 min cleaning: 9:00 to 16:00).
+    expect(r2.metadata.timeOptions).toHaveLength(15);
+    expect(r2.metadata.timeOptions?.[0]).toBe(at(TUESDAY, '09:00'));
+    expect(r2.metadata.timeOptions?.at(-1)).toBe(at(TUESDAY, '16:00'));
 
     const r3 = await say(t, agent, sessionId, 'at 3pm please');
     expect(r3.metadata.card).toBe('booking_summary');
@@ -170,6 +173,39 @@ describe('booking through conversation', () => {
     expect(rows).toEqual([
       { provider: 'mock', status: 'ok', session_id: sessionId, input_excerpt: 'checkup tomorrow' },
     ]);
+  });
+});
+
+describe('cancelling through conversation', () => {
+  async function book(agent: Agent, serviceId: string, startsAt: string) {
+    const res = await agent.post('/api/v1/appointments').send({ serviceId, startsAt }).expect(201);
+    return res.body.data.id as string;
+  }
+
+  it('lists upcoming appointments with a Cancel button, narrowed by what the user said, and cancels nothing itself', async () => {
+    const { agent, sessionId } = await startChat(t);
+    const checkup = await book(agent, SERVICES.checkup, at(TUESDAY, '10:00'));
+    const cleaning = await book(agent, SERVICES.cleaning, at(TUESDAY, '14:00'));
+
+    const all = await say(t, agent, sessionId, 'I want to cancel an appointment');
+    expect(all.metadata.card).toBe('cancel_options');
+    expect(all.metadata.appointments?.map((a) => a.id)).toEqual([checkup, cleaning]);
+    expect(all.content).toMatch(/Tap Cancel/);
+
+    const one = await say(t, agent, sessionId, 'cancel my cleaning');
+    expect(one.metadata.appointments?.map((a) => a.id)).toEqual([cleaning]);
+
+    const { rows } = await testPool().query("SELECT count(*)::int AS n FROM appointments WHERE status = 'confirmed'");
+    expect(rows[0].n).toBe(2);
+  });
+
+  it("only lists the user's own appointments", async () => {
+    const { agent: other } = await signedInAgent(t.app);
+    await book(other, SERVICES.checkup, at(TUESDAY, '10:00'));
+    const { agent, sessionId } = await startChat(t);
+    const r = await say(t, agent, sessionId, 'cancel my appointment');
+    expect(r.metadata.card).toBeUndefined();
+    expect(r.content).toMatch(/don't have any upcoming appointments/);
   });
 });
 

@@ -68,6 +68,7 @@ export async function createContainer(env: Env, pool: pg.Pool, logger: Logger, o
     business,
     services: servicesRepo,
     availability,
+    appointments: appointmentsRepo,
     extractor,
     chat: chatRepo,
     events,

@@ -4,6 +4,7 @@ import { cn } from '@/lib/cn';
 import { useOpenBooking } from '@/features/appointments/BookingContext';
 import type { UiMessage } from './useChat';
 import { BookingSummaryCard } from './BookingSummaryCard';
+import { CancelOptionsCard } from './CancelOptionsCard';
 import { draftToInitial } from './draft';
 
 export function MessageBubble({
@@ -38,6 +39,10 @@ export function MessageBubble({
 
       {card === 'booking_summary' && m.metadata.draft && (
         <BookingSummaryCard messageId={m.id} draft={m.metadata.draft} sessionId={sessionId} active={summaryActive} />
+      )}
+
+      {card === 'cancel_options' && m.metadata.appointments && (
+        <CancelOptionsCard appointments={m.metadata.appointments} />
       )}
 
       {card === 'fallback_form' && (
