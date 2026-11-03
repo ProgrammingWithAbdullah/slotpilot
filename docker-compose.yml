@@ -1,0 +1,19 @@
+# Local Postgres for development and tests: docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: slotpilot
+      POSTGRES_PASSWORD: slotpilot
+      POSTGRES_DB: slotpilot
+    ports: ['5432:5432']
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/docker/create-test-db.sql:/docker-entrypoint-initdb.d/create-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U slotpilot']
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:

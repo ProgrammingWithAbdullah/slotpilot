@@ -1,0 +1,23 @@
+# Render Blueprint: one Docker web service. The database is Neon (external), so DATABASE_URL
+# and GEMINI_API_KEY are entered in the dashboard (sync: false keeps them out of git).
+services:
+  - type: web
+    name: slotpilot
+    runtime: docker
+    plan: free
+    region: singapore
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_MODELS
+        value: gemini-3.5-flash-lite,gemini-flash-lite-latest
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
