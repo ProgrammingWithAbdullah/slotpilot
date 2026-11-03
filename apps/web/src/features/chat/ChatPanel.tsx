@@ -55,9 +55,9 @@ export function ChatPanel({ compactHeader = false }: { compactHeader?: boolean }
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {!compactHeader && (
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3">
           <div className="flex items-center gap-3">
-            <span className="grid size-9 place-items-center rounded-full bg-primary-soft text-primary-soft-fg">
+            <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-primary-soft to-surface-muted text-primary-soft-fg ring-1 ring-primary/15">
               <Bot className="size-5" aria-hidden="true" />
             </span>
             <div>
@@ -126,7 +126,7 @@ export function ChatPanel({ compactHeader = false }: { compactHeader?: boolean }
         )}
       </div>
 
-      <div className="space-y-2 border-t border-border p-3">
+      <div className="space-y-2 border-t border-border/70 bg-surface-muted/30 p-3">
         {chat.timedOut && (
           <Alert
             tone="info"
@@ -163,7 +163,7 @@ export function ChatPanel({ compactHeader = false }: { compactHeader?: boolean }
           Prefer a form?{' '}
           <button
             type="button"
-            className="font-medium text-primary hover:underline cursor-pointer"
+            className="font-medium text-primary underline decoration-primary/30 underline-offset-4 transition-colors hover:decoration-primary cursor-pointer"
             onClick={() => openBooking(draftToInitial(currentDraft, session?.id))}
           >
             Book manually
@@ -180,7 +180,7 @@ function ConnectionStatus({ status }: { status: SocketStatus }) {
       <span
         aria-hidden="true"
         className={cn(
-          'size-2 rounded-full',
+          'size-2 rounded-full transition-colors duration-300',
           status === 'connected' ? 'bg-success' : status === 'connecting' ? 'bg-warning' : 'bg-fg-subtle',
         )}
       />

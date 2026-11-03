@@ -30,7 +30,9 @@ export default defineConfig({
       output: {
         // One long-lived vendor chunk: app deploys don't bust the cache for React & co.
         // (Splitting React across several chunks creates circular CommonJS chunks that crash at load.)
+        // GSAP has no dependencies, so it can safely live in its own chunk.
         manualChunks(id) {
+          if (id.includes('node_modules/gsap/')) return 'motion';
           if (id.includes('node_modules')) return 'vendor';
         },
       },

@@ -1,13 +1,28 @@
+import { useRef } from 'react';
 import { Link, Outlet } from 'react-router';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useBusiness } from '@/lib/useBusiness';
+import { ScrollTrigger, useGSAP } from '@/lib/motion';
 import { Logo } from './Logo';
 
 export function AppLayout() {
   const { user, logout } = useAuth();
   const { data: business } = useBusiness();
+  const headerRef = useRef<HTMLElement>(null);
+
+  // The header lifts off the page once content scrolls under it. This is a state cue
+  // (shadow + border), not motion, so it runs with reduced motion too.
+  useGSAP(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    ScrollTrigger.create({
+      start: 'top -8',
+      end: 'max',
+      onToggle: (self) => header.toggleAttribute('data-scrolled', self.isActive),
+    });
+  });
   const initials = user?.fullName
     .split(/\s+/)
     .map((p) => p[0])
@@ -23,7 +38,10 @@ export function AppLayout() {
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-30 border-b border-border bg-surface/85 backdrop-blur">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-30 border-b border-transparent bg-bg/70 backdrop-blur-xl backdrop-saturate-150 transition-[border-color,box-shadow,background-color] duration-300 ease-out data-[scrolled]:border-border/70 data-[scrolled]:bg-surface/80 data-[scrolled]:shadow-[var(--shadow-card)]"
+      >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Link to="/" aria-label="SlotPilot home">
@@ -39,7 +57,7 @@ export function AppLayout() {
             <div className="flex items-center gap-2.5">
               <span
                 aria-hidden="true"
-                className="grid size-8 place-items-center rounded-full bg-primary-soft text-xs font-semibold text-primary-soft-fg"
+                className="grid size-8 place-items-center rounded-full bg-gradient-to-br from-primary-soft to-surface-muted text-xs font-semibold tracking-wide text-primary-soft-fg ring-1 ring-primary/15"
               >
                 {initials}
               </span>
@@ -52,7 +70,7 @@ export function AppLayout() {
           </div>
         </div>
       </header>
-      <main id="main" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <main id="main" className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 sm:pt-10 lg:pb-10">
         <Outlet />
       </main>
     </div>

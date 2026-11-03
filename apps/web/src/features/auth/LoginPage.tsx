@@ -51,7 +51,7 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-6 rounded-lg border border-dashed border-border p-3 text-sm text-fg-muted">
+      <div className="mt-6 rounded-xl bg-primary-soft/60 px-4 py-3 text-sm text-fg-muted ring-1 ring-inset ring-primary/10">
         Reviewing the demo?{' '}
         <Button
           variant="link"

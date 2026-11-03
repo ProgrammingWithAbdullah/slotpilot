@@ -28,15 +28,20 @@
   --color-warning-soft: var(--warning-soft);
   --color-ring: var(--ring);
 
-  --radius-card: 0.875rem;
-  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
-  --shadow-pop: 0 10px 30px -10px rgb(15 23 42 / 0.25);
+  --radius-card: 1rem;
 
-  --animate-bounce-dot: bounce-dot 1.2s infinite ease-in-out;
-  --animate-fade-in: fade-in 180ms ease-out;
+  /* One easing family for the whole app: a fast start that settles softly. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 360ms;
+
+  --animate-typing-dot: typing-dot 1.2s infinite ease-in-out;
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-out) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
 }
 
-@keyframes bounce-dot {
+@keyframes typing-dot {
   0%,
   80%,
   100% {
@@ -51,11 +56,74 @@
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 150% 0;
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    background-position: -50% 0;
+  }
+}
+
+/* Radix keeps a closing dialog mounted until its exit animation ends. */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@utility animate-overlay {
+  &[data-state='open'] {
+    animation: overlay-in var(--duration-base) var(--ease-out);
+  }
+  &[data-state='closed'] {
+    animation: overlay-out var(--duration-fast) ease-out forwards;
+  }
+}
+@utility animate-dialog {
+  &[data-state='open'] {
+    animation: dialog-in var(--duration-base) var(--ease-out);
+  }
+  &[data-state='closed'] {
+    animation: dialog-out var(--duration-fast) ease-out forwards;
+  }
+}
+@utility animate-sheet {
+  &[data-state='open'] {
+    animation: sheet-in var(--duration-slow) var(--ease-out);
+  }
+  &[data-state='closed'] {
+    animation: sheet-out var(--duration-fast) ease-out forwards;
   }
 }
 
@@ -80,6 +148,15 @@
   --warning: #a16207;
   --warning-soft: #fdf6e3;
   --ring: #14b8a6;
+
+  /* Layered, low-opacity shadows read as depth; a single dark one reads as a smudge. */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px -4px rgb(15 23 42 / 0.06);
+  --shadow-raised: 0 2px 4px rgb(15 23 42 / 0.04), 0 12px 24px -8px rgb(15 23 42 / 0.12);
+  --shadow-pop:
+    0 0 0 1px rgb(15 23 42 / 0.06), 0 8px 16px -8px rgb(15 23 42 / 0.12), 0 32px 64px -16px rgb(15 23 42 / 0.28);
+  --shadow-button:
+    inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(15 23 42 / 0.12), 0 2px 8px -2px rgb(15 118 110 / 0.4);
+  --wash: rgb(20 184 166 / 0.09);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -104,16 +181,47 @@
     --warning: #facc15;
     --warning-soft: #33290d;
     --ring: #2dd4bf;
+
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -4px rgb(0 0 0 / 0.3);
+    --shadow-raised: 0 2px 4px rgb(0 0 0 / 0.3), 0 12px 24px -8px rgb(0 0 0 / 0.5);
+    --shadow-pop:
+      0 0 0 1px rgb(255 255 255 / 0.06), 0 8px 16px -8px rgb(0 0 0 / 0.5), 0 32px 64px -16px rgb(0 0 0 / 0.7);
+    --shadow-button:
+      inset 0 1px 0 rgb(255 255 255 / 0.25), 0 1px 2px rgb(0 0 0 / 0.4), 0 2px 10px -2px rgb(45 212 191 / 0.35);
+    --wash: rgb(45 212 191 / 0.06);
   }
 }
 
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    scrollbar-color: var(--border) transparent;
   }
   body {
     @apply bg-bg text-fg font-sans text-[15px] leading-relaxed;
+    /* Inter's alternate digits and a single-storey a: calmer, less "default Inter". */
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    caret-color: var(--primary);
+    background-image: radial-gradient(1100px 420px at 50% -180px, var(--wash), transparent 70%);
+    background-repeat: no-repeat;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+  h1 {
+    letter-spacing: -0.025em;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--primary-soft-fg);
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;

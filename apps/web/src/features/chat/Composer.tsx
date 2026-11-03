@@ -65,12 +65,17 @@ export function Composer({
             }
           }}
           className={cn(
-            'block max-h-32 min-h-11 w-full resize-none rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[15px] placeholder:text-fg-subtle focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-60',
+            'block max-h-32 min-h-11 w-full resize-none rounded-xl border border-border bg-surface px-3.5 py-2.5 text-[15px] shadow-[var(--shadow-card)] transition-[border-color,box-shadow] duration-150 ease-out placeholder:text-fg-subtle focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/20 disabled:opacity-60',
             tooLong && 'border-danger',
           )}
         />
         {text.length > MAX_MESSAGE_LENGTH - 100 && (
-          <span className={cn('absolute bottom-1 right-2 text-[11px]', tooLong ? 'text-danger' : 'text-fg-subtle')}>
+          <span
+            className={cn(
+              'absolute bottom-1 right-2 text-[11px] tabular-nums',
+              tooLong ? 'text-danger' : 'text-fg-subtle',
+            )}
+          >
             {text.length}/{MAX_MESSAGE_LENGTH}
           </span>
         )}

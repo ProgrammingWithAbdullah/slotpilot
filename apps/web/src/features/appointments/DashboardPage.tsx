@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { CalendarPlus, Clock3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -6,6 +7,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { ChatWidget } from '@/features/chat/ChatWidget';
 import { greeting } from '@/lib/format';
 import { useBusiness } from '@/lib/useBusiness';
+import { EASE_OUT, gsap, useMotion } from '@/lib/motion';
 import { AppointmentList } from './AppointmentList';
 import { BookingProvider, useOpenBooking } from './BookingContext';
 import { useAppointmentsRealtime } from './api';
@@ -24,28 +26,44 @@ function Dashboard() {
   const openBooking = useOpenBooking();
   useAppointmentsRealtime();
   const firstName = user?.fullName.split(' ')[0];
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // One staged entrance when the dashboard first appears: greeting, then the list, then the assistant.
+  useMotion(
+    () => {
+      gsap.from('[data-reveal]', {
+        autoAlpha: 0,
+        y: 14,
+        duration: 0.9,
+        ease: EASE_OUT,
+        stagger: 0.08,
+        clearProps: 'opacity,visibility,transform',
+      });
+    },
+    { scope: rootRef },
+  );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
+    <div ref={rootRef} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start lg:gap-8">
       <section aria-labelledby="appointments-heading" className="min-w-0 space-y-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div data-reveal className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <h1 className="text-[26px] font-semibold leading-tight sm:text-3xl">
               {greeting()}, {firstName}
             </h1>
             {business && (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-fg-muted">
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-fg-muted">
                 <Clock3 className="size-4" aria-hidden="true" />
                 {business.name} is open {hoursText(business.openDays, business.opensAt, business.closesAt)}
               </p>
             )}
           </div>
-          <Button onClick={() => openBooking()}>
+          <Button size="lg" onClick={() => openBooking()}>
             <CalendarPlus className="size-4" aria-hidden="true" /> Book appointment
           </Button>
         </div>
 
-        <Card className="p-4 sm:p-6">
+        <Card data-reveal className="p-4 sm:p-6">
           <Tabs defaultValue="upcoming">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <h2 id="appointments-heading" className="text-lg font-semibold">

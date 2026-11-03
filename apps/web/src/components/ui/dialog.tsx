@@ -25,19 +25,19 @@ export function Dialog({
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] data-[state=open]:animate-fade-in" />
+        <D.Overlay className="animate-overlay fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[3px]" />
         <D.Content
           className={cn(
-            'fixed z-50 flex flex-col bg-surface shadow-[var(--shadow-pop)] focus:outline-none data-[state=open]:animate-fade-in',
+            'fixed z-50 flex flex-col bg-surface shadow-[var(--shadow-pop)] focus:outline-none',
             variant === 'center'
-              ? 'left-1/2 top-1/2 max-h-[92vh] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border'
-              : 'inset-x-0 bottom-0 h-[92dvh] rounded-t-2xl',
+              ? 'animate-dialog left-1/2 top-1/2 max-h-[92vh] w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl'
+              : 'animate-sheet inset-x-0 bottom-0 h-[92dvh] rounded-t-3xl',
             className,
           )}
         >
           <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div>
-              <D.Title className="text-base font-semibold">{title}</D.Title>
+              <D.Title className="text-[17px] font-semibold tracking-tight">{title}</D.Title>
               {description ? (
                 <D.Description className="mt-0.5 text-sm text-fg-subtle">{description}</D.Description>
               ) : (
@@ -45,10 +45,10 @@ export function Dialog({
               )}
             </div>
             <D.Close
-              className="-m-1 rounded-md p-1 text-fg-subtle hover:bg-surface-muted hover:text-fg"
+              className="-m-2 grid size-10 shrink-0 place-items-center rounded-lg text-fg-subtle transition-colors hover:bg-surface-muted hover:text-fg cursor-pointer"
               aria-label="Close"
             >
-              <X className="size-5" />
+              <X className="size-5" aria-hidden="true" />
             </D.Close>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</div>

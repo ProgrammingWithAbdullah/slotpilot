@@ -24,17 +24,22 @@ export function AppointmentCard({
   const { day, month, weekday } = dateParts(a.startsAt, timezone);
   const cancelled = a.status === 'cancelled';
   return (
-    <li className="flex animate-fade-in gap-3 rounded-xl border border-border bg-surface p-3 transition-shadow hover:shadow-[var(--shadow-card)] sm:gap-4 sm:p-4">
+    <li
+      data-appointment
+      className="group flex gap-3 rounded-[14px] border border-border/70 bg-surface p-3 transition-[border-color,box-shadow,translate] duration-200 ease-out hover:-translate-y-px hover:border-border hover:shadow-[var(--shadow-raised)] sm:gap-4 sm:p-4"
+    >
       <div
         className={cn(
-          'flex w-12 shrink-0 flex-col items-center justify-center rounded-lg py-2 sm:w-14',
-          cancelled ? 'bg-surface-muted text-fg-subtle' : 'bg-primary-soft text-primary-soft-fg',
+          'flex w-12 shrink-0 flex-col items-center justify-center rounded-[10px] py-2 tabular-nums sm:w-14',
+          cancelled
+            ? 'bg-surface-muted text-fg-subtle'
+            : 'bg-gradient-to-b from-primary-soft to-primary-soft/60 text-primary-soft-fg ring-1 ring-inset ring-primary/10',
         )}
         aria-hidden="true"
       >
-        <span className="text-[11px] font-medium uppercase">{weekday}</span>
-        <span className="text-xl font-semibold leading-none">{day}</span>
-        <span className="text-[11px] uppercase">{month}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] opacity-80">{weekday}</span>
+        <span className="my-0.5 text-[22px] font-semibold leading-none tracking-tight">{day}</span>
+        <span className="text-[10px] font-medium uppercase tracking-[0.08em] opacity-80">{month}</span>
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
@@ -67,7 +72,7 @@ export function AppointmentCard({
         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-fg-muted">
           <Clock className="size-3.5 shrink-0" aria-hidden="true" />
           <span className="sr-only">{formatDate(a.startsAt, timezone)}, </span>
-          <span>
+          <span className="tabular-nums">
             {formatTime(a.startsAt, timezone)} to {formatTime(a.endsAt, timezone)}
             <span className="text-fg-subtle"> · {a.service.durationMinutes} min</span>
           </span>

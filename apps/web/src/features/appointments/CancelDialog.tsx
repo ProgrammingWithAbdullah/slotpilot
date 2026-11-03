@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { toast } from 'sonner';
 import type { AppointmentDto } from '@slotpilot/shared';
 import { Dialog } from '@/components/ui/dialog';
@@ -17,6 +18,10 @@ export function CancelDialog({
   onClose: () => void;
 }) {
   const cancel = useCancelAppointment();
+  // Keep showing the last appointment while the dialog plays its exit animation.
+  const [shown, setShown] = useState(appointment);
+  if (appointment && appointment !== shown) setShown(appointment);
+
   return (
     <Dialog
       open={Boolean(appointment)}
@@ -30,13 +35,13 @@ export function CancelDialog({
       description="The time will be released for other customers."
       className="max-w-md"
     >
-      {appointment && (
+      {shown && (
         <div className="space-y-4 p-5">
-          <p className="rounded-lg bg-surface-muted px-4 py-3">
-            <span className="font-medium">{appointment.service.name}</span>
+          <p className="rounded-xl bg-surface-muted px-4 py-3">
+            <span className="font-medium">{shown.service.name}</span>
             <br />
             <span className="text-fg-muted">
-              {formatDate(appointment.startsAt, timezone)} at {formatTime(appointment.startsAt, timezone)}
+              {formatDate(shown.startsAt, timezone)} at {formatTime(shown.startsAt, timezone)}
             </span>
           </p>
           {cancel.isError && (
@@ -50,7 +55,7 @@ export function CancelDialog({
               variant="danger"
               loading={cancel.isPending}
               onClick={async () => {
-                await cancel.mutateAsync(appointment.id);
+                await cancel.mutateAsync(shown.id);
                 toast.success('Appointment cancelled');
                 onClose();
               }}

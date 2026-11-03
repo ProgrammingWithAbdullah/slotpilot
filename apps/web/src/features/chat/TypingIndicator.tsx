@@ -6,7 +6,7 @@ export function TypingIndicator() {
         <span
           key={delay}
           aria-hidden="true"
-          className="size-1.5 animate-bounce-dot rounded-full bg-fg-subtle"
+          className="size-1.5 animate-typing-dot rounded-full bg-fg-subtle"
           style={{ animationDelay: `${delay}ms` }}
         />
       ))}

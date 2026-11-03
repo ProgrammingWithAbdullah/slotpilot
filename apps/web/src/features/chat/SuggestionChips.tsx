@@ -15,7 +15,7 @@ export function SuggestionChips({
           type="button"
           disabled={disabled}
           onClick={() => onPick(s)}
-          className="rounded-full border border-primary/40 bg-surface px-3 py-1.5 text-sm text-primary transition-colors hover:bg-primary-soft disabled:opacity-50 cursor-pointer"
+          className="animate-fade-in rounded-full border border-primary/30 bg-surface px-3.5 py-1.5 text-sm font-medium text-primary shadow-[var(--shadow-card)] transition-[background-color,border-color,scale] duration-150 ease-out hover:border-primary/50 hover:bg-primary-soft enabled:active:scale-[0.96] disabled:opacity-50 cursor-pointer"
         >
           {s}
         </button>

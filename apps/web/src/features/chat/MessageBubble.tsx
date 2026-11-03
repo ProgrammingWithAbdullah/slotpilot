@@ -26,7 +26,7 @@ export function MessageBubble({
         className={cn(
           'max-w-[88%] whitespace-pre-wrap break-words px-3.5 py-2.5 text-[15px] leading-snug',
           mine
-            ? 'rounded-2xl rounded-br-md bg-primary text-primary-fg'
+            ? 'rounded-2xl rounded-br-md bg-primary text-primary-fg shadow-[var(--shadow-button)]'
             : 'rounded-2xl rounded-bl-md bg-surface-muted text-fg',
           card === 'booked' && 'border border-success/30 bg-success-soft',
           m.pending && 'opacity-70',
