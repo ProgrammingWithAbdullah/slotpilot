@@ -65,8 +65,13 @@ export function createApp(c: Container) {
       sessionMaxAgeMs: c.tokens.expiresInMs,
     }),
   );
-  api.use(catalogRoutes({ business: c.business, services: c.servicesRepo, availability: c.availability, requireAuth: auth }));
-  api.use('/appointments', appointmentsRoutes({ appointments: c.appointments, requireAuth: auth, limiters: c.limiters }));
+  api.use(
+    catalogRoutes({ business: c.business, services: c.servicesRepo, availability: c.availability, requireAuth: auth }),
+  );
+  api.use(
+    '/appointments',
+    appointmentsRoutes({ appointments: c.appointments, requireAuth: auth, limiters: c.limiters }),
+  );
   api.use('/chat', chatRoutes({ chat: c.chat, requireAuth: auth, limiters: c.limiters }));
   api.use(notFound);
   app.use('/api/v1', api);

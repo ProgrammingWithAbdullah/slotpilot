@@ -15,9 +15,7 @@ export interface Issue {
 }
 
 export type ServiceMatch =
-  | { kind: 'match'; service: ServiceDto }
-  | { kind: 'ambiguous'; options: ServiceDto[] }
-  | { kind: 'none' };
+  { kind: 'match'; service: ServiceDto } | { kind: 'ambiguous'; options: ServiceDto[] } | { kind: 'none' };
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
 

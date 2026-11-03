@@ -16,11 +16,7 @@ export function createAvailabilityService(deps: {
   async function slotsFor(service: ServiceDto, date: string): Promise<string[]> {
     const window = openingWindow(business, date);
     if (!window?.start || !window.end) return [];
-    const busy = await deps.appointments.busyRanges(
-      business.id,
-      window.start.toJSDate(),
-      window.end.toJSDate(),
-    );
+    const busy = await deps.appointments.busyRanges(business.id, window.start.toJSDate(), window.end.toJSDate());
     return computeSlots({ business, durationMinutes: service.durationMinutes, date, busy, now: deps.now() });
   }
 

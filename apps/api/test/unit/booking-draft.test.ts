@@ -9,7 +9,12 @@ const svc = (id: string, name: string, durationMinutes = 30): ServiceDto => ({
   durationMinutes,
   priceCents: null,
 });
-const services = [svc('1', 'Checkup'), svc('2', 'Cleaning', 45), svc('3', 'Teeth Whitening', 60), svc('4', 'Deep Cleaning', 90)];
+const services = [
+  svc('1', 'Checkup'),
+  svc('2', 'Cleaning', 45),
+  svc('3', 'Teeth Whitening', 60),
+  svc('4', 'Deep Cleaning', 90),
+];
 const business: BusinessDto = {
   id: 'b',
   name: 'Test',
@@ -49,12 +54,22 @@ describe('applyExtraction', () => {
     const r = applyExtraction({}, { ...none, service: 'Cleaning', date: '2030-01-08', time: '15:00' }, ctx);
     expect(r.issues).toEqual([]);
     expect(r.changed).toBe(true);
-    expect(r.draft).toMatchObject({ serviceId: '2', serviceName: 'Cleaning', durationMinutes: 45, date: '2030-01-08', time: '15:00' });
+    expect(r.draft).toMatchObject({
+      serviceId: '2',
+      serviceName: 'Cleaning',
+      durationMinutes: 45,
+      date: '2030-01-08',
+      time: '15:00',
+    });
     expect(missingFields(r.draft)).toEqual([]);
   });
 
   it('keeps existing fields when the model returns null for them', () => {
-    const r = applyExtraction({ serviceId: '1', serviceName: 'Checkup', durationMinutes: 30 }, { ...none, date: '2030-01-08' }, ctx);
+    const r = applyExtraction(
+      { serviceId: '1', serviceName: 'Checkup', durationMinutes: 30 },
+      { ...none, date: '2030-01-08' },
+      ctx,
+    );
     expect(r.draft.serviceId).toBe('1');
     expect(r.draft.date).toBe('2030-01-08');
   });

@@ -1,11 +1,5 @@
 import type pg from 'pg';
-import type {
-  BookingDraft,
-  ChatMessageDto,
-  ChatSessionDto,
-  ChatState,
-  MessageMetadata,
-} from '@slotpilot/shared';
+import type { BookingDraft, ChatMessageDto, ChatSessionDto, ChatState, MessageMetadata } from '@slotpilot/shared';
 import { withTransaction, type Queryable } from '../../db/pool.js';
 
 interface SessionRow {
@@ -45,8 +39,7 @@ const toSession = (r: SessionRow): SessionRecord => ({
   draft: r.booking_draft,
   failedTurns: r.failed_turns,
   replyPending:
-    r.reply_pending_since !== null &&
-    Date.now() - r.reply_pending_since.getTime() < STALE_CLAIM_SECONDS * 1000,
+    r.reply_pending_since !== null && Date.now() - r.reply_pending_since.getTime() < STALE_CLAIM_SECONDS * 1000,
   lastMessageAt: r.last_message_at.toISOString(),
   createdAt: r.created_at.toISOString(),
 });

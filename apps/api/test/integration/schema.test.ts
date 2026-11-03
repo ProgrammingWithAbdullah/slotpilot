@@ -38,7 +38,9 @@ describe('appointments constraints', () => {
   });
 
   it('rejects an appointment whose service belongs to another tenant (composite FK)', async () => {
-    await expect(insert('2030-01-08T10:00Z', '2030-01-08T10:30Z', { service: SERVICES.otherTenant })).rejects.toMatchObject({
+    await expect(
+      insert('2030-01-08T10:00Z', '2030-01-08T10:30Z', { service: SERVICES.otherTenant }),
+    ).rejects.toMatchObject({
       code: '23503',
     });
   });
@@ -50,7 +52,9 @@ describe('appointments constraints', () => {
   });
 
   it('enforces status values, ordering of times and cancelled_at consistency', async () => {
-    await expect(insert('2030-01-08T10:00Z', '2030-01-08T10:30Z', { status: 'maybe' })).rejects.toMatchObject({ code: '23514' });
+    await expect(insert('2030-01-08T10:00Z', '2030-01-08T10:30Z', { status: 'maybe' })).rejects.toMatchObject({
+      code: '23514',
+    });
     await expect(insert('2030-01-08T10:30Z', '2030-01-08T10:00Z')).rejects.toMatchObject({ code: '23514' });
     await expect(
       pool.query(
@@ -65,15 +69,19 @@ describe('appointments constraints', () => {
 describe('users constraints', () => {
   it('treats emails case-insensitively per business (citext)', async () => {
     await expect(
-      pool.query(`INSERT INTO users (business_id, email, password_hash, full_name) VALUES ($1, 'DB@TEST.COM', 'x', 'Dup')`, [BUSINESS_ID]),
+      pool.query(
+        `INSERT INTO users (business_id, email, password_hash, full_name) VALUES ($1, 'DB@TEST.COM', 'x', 'Dup')`,
+        [BUSINESS_ID],
+      ),
     ).rejects.toMatchObject({ code: '23505' });
   });
 
   it('allows the same email at a different business', async () => {
     await expect(
-      pool.query(`INSERT INTO users (business_id, email, password_hash, full_name) VALUES ($1, 'db@test.com', 'x', 'Other')`, [
-        OTHER_BUSINESS_ID,
-      ]),
+      pool.query(
+        `INSERT INTO users (business_id, email, password_hash, full_name) VALUES ($1, 'db@test.com', 'x', 'Other')`,
+        [OTHER_BUSINESS_ID],
+      ),
     ).resolves.toBeTruthy();
   });
 });

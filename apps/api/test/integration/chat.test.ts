@@ -1,6 +1,15 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { ChatMessageDto } from '@slotpilot/shared';
-import { SERVICES, TUESDAY, at, buildTestApp, resetDatabase, signedInAgent, testPool, type TestApp } from '../helpers.js';
+import {
+  SERVICES,
+  TUESDAY,
+  at,
+  buildTestApp,
+  resetDatabase,
+  signedInAgent,
+  testPool,
+  type TestApp,
+} from '../helpers.js';
 import type { LlmProvider } from '../../src/modules/ai/llm-provider.js';
 import { LlmError } from '../../src/modules/ai/llm-provider.js';
 
@@ -32,7 +41,11 @@ async function say(app: TestApp, agent: Agent, sessionId: string, content: strin
   return msgs.body.data[0];
 }
 
-const fakeProvider = (complete: LlmProvider['complete']): LlmProvider => ({ name: 'fake', defaultModel: 'fake-1', complete });
+const fakeProvider = (complete: LlmProvider['complete']): LlmProvider => ({
+  name: 'fake',
+  defaultModel: 'fake-1',
+  complete,
+});
 
 describe('chat sessions', () => {
   it('starts with a welcome message and suggestions', async () => {
@@ -56,7 +69,10 @@ describe('chat sessions', () => {
   it('validates message content', async () => {
     const { agent, sessionId } = await startChat(t);
     await agent.post(`/api/v1/chat/sessions/${sessionId}/messages`).send({ content: '   ' }).expect(400);
-    await agent.post(`/api/v1/chat/sessions/${sessionId}/messages`).send({ content: 'x'.repeat(1001) }).expect(400);
+    await agent
+      .post(`/api/v1/chat/sessions/${sessionId}/messages`)
+      .send({ content: 'x'.repeat(1001) })
+      .expect(400);
   });
 });
 
@@ -91,7 +107,10 @@ describe('booking through conversation', () => {
 
     await t.container.tasks.idle();
     const after = await agent.get(`/api/v1/chat/sessions/${sessionId}/messages?after=${r3.id}`).expect(200);
-    expect(after.body.data[0]).toMatchObject({ role: 'assistant', metadata: { card: 'booked', appointmentId: booked.body.data.id } });
+    expect(after.body.data[0]).toMatchObject({
+      role: 'assistant',
+      metadata: { card: 'booked', appointmentId: booked.body.data.id },
+    });
     const done = await agent.get(`/api/v1/chat/sessions/${sessionId}`).expect(200);
     expect(done.body.data).toMatchObject({ state: 'booked', draft: {} });
   });
@@ -105,7 +124,10 @@ describe('booking through conversation', () => {
 
   it('offers the closest free times when the requested slot is taken', async () => {
     const { agent: other } = await signedInAgent(t.app);
-    await other.post('/api/v1/appointments').send({ serviceId: SERVICES.cleaning, startsAt: at(TUESDAY, '15:00') }).expect(201);
+    await other
+      .post('/api/v1/appointments')
+      .send({ serviceId: SERVICES.cleaning, startsAt: at(TUESDAY, '15:00') })
+      .expect(201);
 
     const { agent, sessionId } = await startChat(t);
     const r = await say(t, agent, sessionId, 'cleaning tomorrow at 3pm');
@@ -145,7 +167,9 @@ describe('booking through conversation', () => {
     const { agent, sessionId } = await startChat(t);
     await say(t, agent, sessionId, 'checkup tomorrow');
     const { rows } = await testPool().query('SELECT provider, status, session_id, input_excerpt FROM ai_interactions');
-    expect(rows).toEqual([{ provider: 'mock', status: 'ok', session_id: sessionId, input_excerpt: 'checkup tomorrow' }]);
+    expect(rows).toEqual([
+      { provider: 'mock', status: 'ok', session_id: sessionId, input_excerpt: 'checkup tomorrow' },
+    ]);
   });
 });
 
@@ -168,7 +192,9 @@ describe('AI failures and guardrails', () => {
   });
 
   it('falls back when the model returns something that is not valid JSON', async () => {
-    const garbage = await buildTestApp({ llmProvider: fakeProvider(async () => ({ model: 'fake-1', text: 'Sure! Booked.' })) });
+    const garbage = await buildTestApp({
+      llmProvider: fakeProvider(async () => ({ model: 'fake-1', text: 'Sure! Booked.' })),
+    });
     const { agent, sessionId } = await startChat(garbage);
     const r = await say(garbage, agent, sessionId, 'cleaning tomorrow');
     expect(r.metadata).toMatchObject({ card: 'fallback_form', fallbackReason: 'invalid_output' });

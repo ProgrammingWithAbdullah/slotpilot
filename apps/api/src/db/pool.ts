@@ -7,6 +7,19 @@ pg.types.setTypeParser(pg.types.builtins.INT8, (v) => Number(v));
 // Keep DATE columns as plain 'YYYY-MM-DD' strings instead of shifting them through local time.
 pg.types.setTypeParser(pg.types.builtins.DATE, (v) => v);
 
+/** True for a PgBouncer-style pooled endpoint (Neon names them "<endpoint>-pooler.<region>..."). */
+export function isPooledUrl(connectionString: string): boolean {
+  return /@[^/@]*-pooler\./.test(connectionString);
+}
+
+/**
+ * The direct (unpooled) URL for the same database. Migrations need it: a transaction-mode
+ * pooler cannot hold the session-level advisory lock the migrator uses.
+ */
+export function directUrl(connectionString: string): string {
+  return connectionString.replace(/(@[^/@]*?)-pooler\./, '$1.');
+}
+
 export function createPool(opts: { connectionString: string; max: number; ssl?: boolean }): pg.Pool {
   const needsSsl = opts.ssl ?? /sslmode=require/.test(opts.connectionString);
   return new pg.Pool({
@@ -15,16 +28,13 @@ export function createPool(opts: { connectionString: string; max: number; ssl?: 
     ssl: needsSsl ? { rejectUnauthorized: true } : undefined,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
-    // Protects the pool from runaway queries.
-    statement_timeout: 5_000,
+    // Protects the pool from runaway queries. Poolers reject it as a startup parameter.
+    statement_timeout: isPooledUrl(opts.connectionString) ? undefined : 5_000,
   });
 }
 
 /** Runs fn inside a transaction; commits on success, rolls back on any error. */
-export async function withTransaction<T>(
-  pool: pg.Pool,
-  fn: (client: pg.PoolClient) => Promise<T>,
-): Promise<T> {
+export async function withTransaction<T>(pool: pg.Pool, fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

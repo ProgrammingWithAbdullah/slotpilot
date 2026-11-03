@@ -50,7 +50,12 @@ export async function createContainer(env: Env, pool: pg.Pool, logger: Logger, o
   const chatRepo = createChatRepository(pool);
   const tokens = createTokenService({ secret: env.JWT_SECRET, expiresInHours: env.JWT_EXPIRES_IN_HOURS });
 
-  const availability = createAvailabilityService({ business, services: servicesRepo, appointments: appointmentsRepo, now });
+  const availability = createAvailabilityService({
+    business,
+    services: servicesRepo,
+    appointments: appointmentsRepo,
+    now,
+  });
 
   const provider: LlmProvider =
     overrides.llmProvider ??
@@ -99,7 +104,7 @@ export async function createContainer(env: Env, pool: pg.Pool, logger: Logger, o
       now,
     }),
     chat: createChatService({ business, chat: chatRepo, assistant, events, tasks, logger }),
-    aiProviderName: provider.name,
+    aiProviderName: overrides.llmProvider || env.aiEnabled ? provider.name : 'disabled',
   };
 }
 

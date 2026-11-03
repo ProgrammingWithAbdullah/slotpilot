@@ -21,15 +21,10 @@ export function catalogRoutes(deps: {
     res.json({ data: await deps.services.listActive(deps.business.id) });
   });
 
-  router.get(
-    '/availability',
-    deps.requireAuth,
-    validate({ query: availabilityQuerySchema }),
-    async (req, res) => {
-      const q = req.valid.query as AvailabilityQuery;
-      res.json({ data: await deps.availability.getAvailability(q.serviceId, q.date) });
-    },
-  );
+  router.get('/availability', deps.requireAuth, validate({ query: availabilityQuerySchema }), async (req, res) => {
+    const q = req.valid.query as AvailabilityQuery;
+    res.json({ data: await deps.availability.getAvailability(q.serviceId, q.date) });
+  });
 
   return router;
 }

@@ -12,7 +12,11 @@ import { ValidationError } from '../../lib/errors.js';
 import type { RateLimiters } from '../../middleware/rate-limit.js';
 import type { AppointmentsService } from './appointments.service.js';
 
-const idempotencyKeySchema = z.string().min(8).max(100).regex(/^[A-Za-z0-9-_]+$/);
+const idempotencyKeySchema = z
+  .string()
+  .min(8)
+  .max(100)
+  .regex(/^[A-Za-z0-9-_]+$/);
 
 export function appointmentsRoutes(deps: {
   appointments: AppointmentsService;

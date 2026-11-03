@@ -1,6 +1,17 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
-import { MONDAY, SERVICES, SUNDAY, TUESDAY, at, buildTestApp, resetDatabase, signedInAgent, testPool, type TestApp } from '../helpers.js';
+import {
+  MONDAY,
+  SERVICES,
+  SUNDAY,
+  TUESDAY,
+  at,
+  buildTestApp,
+  resetDatabase,
+  signedInAgent,
+  testPool,
+  type TestApp,
+} from '../helpers.js';
 
 let t: TestApp;
 beforeAll(async () => {
@@ -27,7 +38,7 @@ describe('catalog', () => {
     expect(slots.body.data.timezone).toBe('Asia/Karachi');
   });
 
-  it('does not expose another tenant\'s services', async () => {
+  it("does not expose another tenant's services", async () => {
     const { agent } = await signedInAgent(t.app);
     await agent.get(`/api/v1/availability?serviceId=${SERVICES.otherTenant}&date=${MONDAY}`).expect(404);
   });
@@ -48,7 +59,11 @@ describe('catalog', () => {
 describe('POST /appointments', () => {
   it('books a free slot and removes it from availability', async () => {
     const { agent } = await signedInAgent(t.app);
-    const res = await book(agent, { serviceId: SERVICES.cleaning, startsAt: at(TUESDAY, '10:00'), notes: 'Sensitive teeth' });
+    const res = await book(agent, {
+      serviceId: SERVICES.cleaning,
+      startsAt: at(TUESDAY, '10:00'),
+      notes: 'Sensitive teeth',
+    });
     expect(res.status).toBe(201);
     expect(res.body.data).toMatchObject({
       status: 'confirmed',
@@ -76,7 +91,7 @@ describe('POST /appointments', () => {
     expect(res.body.error.code).toBe(code);
   });
 
-  it('rejects another tenant\'s service', async () => {
+  it("rejects another tenant's service", async () => {
     const { agent } = await signedInAgent(t.app);
     const res = await book(agent, { serviceId: SERVICES.otherTenant, startsAt: at(TUESDAY, '10:00') });
     expect(res.status).toBe(400);
@@ -90,7 +105,11 @@ describe('POST /appointments', () => {
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('SLOT_UNAVAILABLE');
     // The three free times closest to the requested 10:30, in time order.
-    expect(res.body.error.details.alternatives).toEqual([at(TUESDAY, '09:30'), at(TUESDAY, '11:00'), at(TUESDAY, '11:30')]);
+    expect(res.body.error.details.alternatives).toEqual([
+      at(TUESDAY, '09:30'),
+      at(TUESDAY, '11:00'),
+      at(TUESDAY, '11:30'),
+    ]);
   });
 
   it('lets exactly one of two simultaneous bookings for the same slot win (DB exclusion constraint)', async () => {
@@ -118,7 +137,11 @@ describe('POST /appointments', () => {
     const a = await signedInAgent(t.app);
     const b = await signedInAgent(t.app);
     const session = await a.agent.post('/api/v1/chat/sessions').expect(201);
-    const res = await book(b.agent, { serviceId: SERVICES.checkup, startsAt: at(TUESDAY, '09:00'), chatSessionId: session.body.data.id });
+    const res = await book(b.agent, {
+      serviceId: SERVICES.checkup,
+      startsAt: at(TUESDAY, '09:00'),
+      chatSessionId: session.body.data.id,
+    });
     expect(res.status).toBe(404);
   });
 
@@ -134,14 +157,19 @@ describe('reading and cancelling', () => {
       await book(agent, { serviceId: SERVICES.checkup, startsAt: at(TUESDAY, hm) }).expect(201);
     }
     const page1 = await agent.get('/api/v1/appointments?scope=upcoming&limit=2').expect(200);
-    expect(page1.body.data.map((a: { startsAt: string }) => a.startsAt)).toEqual(['2030-01-08T04:00:00.000Z', '2030-01-08T06:00:00.000Z']);
+    expect(page1.body.data.map((a: { startsAt: string }) => a.startsAt)).toEqual([
+      '2030-01-08T04:00:00.000Z',
+      '2030-01-08T06:00:00.000Z',
+    ]);
     expect(page1.body.meta.nextCursor).toBeTruthy();
-    const page2 = await agent.get(`/api/v1/appointments?scope=upcoming&limit=2&cursor=${page1.body.meta.nextCursor}`).expect(200);
+    const page2 = await agent
+      .get(`/api/v1/appointments?scope=upcoming&limit=2&cursor=${page1.body.meta.nextCursor}`)
+      .expect(200);
     expect(page2.body.data.map((a: { startsAt: string }) => a.startsAt)).toEqual(['2030-01-08T10:00:00.000Z']);
     expect(page2.body.meta.nextCursor).toBeNull();
   });
 
-  it('returns 404 (not 403) for another user\'s appointment', async () => {
+  it("returns 404 (not 403) for another user's appointment", async () => {
     const a = await signedInAgent(t.app);
     const b = await signedInAgent(t.app);
     const created = await book(a.agent, { serviceId: SERVICES.checkup, startsAt: at(TUESDAY, '09:00') });

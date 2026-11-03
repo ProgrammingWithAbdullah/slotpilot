@@ -60,14 +60,20 @@ describe('POST /auth/login', () => {
   });
 
   it('logs in with the right password', async () => {
-    const res = await request(t.app).post('/api/v1/auth/login').send({ email: 'ayesha@example.com', password: 'Password123!' });
+    const res = await request(t.app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'ayesha@example.com', password: 'Password123!' });
     expect(res.status).toBe(200);
     expect(res.headers['set-cookie']![0]).toMatch(/^sp_session=/);
   });
 
   it('gives the same 401 for a wrong password and an unknown email', async () => {
-    const wrong = await request(t.app).post('/api/v1/auth/login').send({ email: 'ayesha@example.com', password: 'nope-nope' });
-    const unknown = await request(t.app).post('/api/v1/auth/login').send({ email: 'ghost@example.com', password: 'nope-nope' });
+    const wrong = await request(t.app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'ayesha@example.com', password: 'nope-nope' });
+    const unknown = await request(t.app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'ghost@example.com', password: 'nope-nope' });
     expect(wrong.status).toBe(401);
     expect(unknown.status).toBe(401);
     expect(wrong.body.error.code).toBe('INVALID_CREDENTIALS');
@@ -96,7 +102,10 @@ describe('GET /auth/me and logout', () => {
     const userId = res.body.data.id;
     const forged = jwt.sign({ bid: 'x' }, 'wrong-secret-wrong-secret-wrong-secret!!', { subject: userId });
     await request(t.app).get('/api/v1/auth/me').set('Cookie', `sp_session=${forged}`).expect(401);
-    const expired = jwt.sign({ bid: t.container.business.id }, process.env.JWT_SECRET!, { subject: userId, expiresIn: -10 });
+    const expired = jwt.sign({ bid: t.container.business.id }, process.env.JWT_SECRET!, {
+      subject: userId,
+      expiresIn: -10,
+    });
     await request(t.app).get('/api/v1/auth/me').set('Cookie', `sp_session=${expired}`).expect(401);
   });
 
@@ -111,7 +120,8 @@ describe('GET /auth/me and logout', () => {
 describe('auth rate limiting', () => {
   it('returns 429 after too many attempts', async () => {
     const limited = await buildTestApp({ env: { RATE_LIMIT_AUTH_PER_15MIN: '3' } });
-    const attempt = () => request(limited.app).post('/api/v1/auth/login').send({ email: 'a@b.co', password: 'whatever' });
+    const attempt = () =>
+      request(limited.app).post('/api/v1/auth/login').send({ email: 'a@b.co', password: 'whatever' });
     for (let i = 0; i < 3; i++) expect((await attempt()).status).toBe(401);
     const res = await attempt();
     expect(res.status).toBe(429);

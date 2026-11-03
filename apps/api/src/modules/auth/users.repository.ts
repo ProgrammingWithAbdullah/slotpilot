@@ -37,10 +37,7 @@ export function createUsersRepository(db: Queryable) {
       return toDto(rows[0]!);
     },
 
-    async findCredentials(
-      businessId: string,
-      email: string,
-    ): Promise<{ user: UserDto; passwordHash: string } | null> {
+    async findCredentials(businessId: string, email: string): Promise<{ user: UserDto; passwordHash: string } | null> {
       const { rows } = await db.query<UserRow & { password_hash: string }>(
         `SELECT ${PUBLIC_COLUMNS}, password_hash FROM users WHERE business_id = $1 AND email = $2`,
         [businessId, email],

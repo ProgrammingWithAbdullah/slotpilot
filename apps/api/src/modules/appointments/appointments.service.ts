@@ -1,10 +1,5 @@
 import { DateTime } from 'luxon';
-import type {
-  AppointmentDto,
-  BusinessDto,
-  CreateAppointmentInput,
-  ListAppointmentsQuery,
-} from '@slotpilot/shared';
+import type { AppointmentDto, BusinessDto, CreateAppointmentInput, ListAppointmentsQuery } from '@slotpilot/shared';
 import {
   BusinessRuleError,
   ConflictError,
@@ -25,8 +20,7 @@ export interface SessionOwnership {
   isOwnedBy(businessId: string, userId: string, sessionId: string): Promise<boolean>;
 }
 
-const encodeCursor = (a: AppointmentDto) =>
-  Buffer.from(`${a.startsAt}|${a.id}`, 'utf8').toString('base64url');
+const encodeCursor = (a: AppointmentDto) => Buffer.from(`${a.startsAt}|${a.id}`, 'utf8').toString('base64url');
 
 function decodeCursor(raw: string): Cursor {
   const [startsAt, id] = Buffer.from(raw, 'base64url').toString('utf8').split('|');
@@ -102,7 +96,11 @@ export function createAppointmentsService(deps: {
           const alternatives = await deps.availability.alternatives(service, startsAt);
           throw new ConflictError('SLOT_UNAVAILABLE', 'Sorry, that time was just taken', { alternatives });
         }
-        if (pgErrorCode(err) === PG.UNIQUE_VIOLATION && pgConstraint(err) === 'appointments_idempotency_key' && idempotencyKey) {
+        if (
+          pgErrorCode(err) === PG.UNIQUE_VIOLATION &&
+          pgConstraint(err) === 'appointments_idempotency_key' &&
+          idempotencyKey
+        ) {
           const existing = await deps.appointments.findByIdempotencyKey(business.id, userId, idempotencyKey);
           if (existing) return { appointment: existing, created: false };
         }

@@ -2,7 +2,16 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { io as connect, type Socket } from 'socket.io-client';
-import { SERVICES, TUESDAY, at, buildTestApp, resetDatabase, signedInAgent, testPool, type TestApp } from '../helpers.js';
+import {
+  SERVICES,
+  TUESDAY,
+  at,
+  buildTestApp,
+  resetDatabase,
+  signedInAgent,
+  testPool,
+  type TestApp,
+} from '../helpers.js';
 import { attachRealtime } from '../../src/modules/realtime/socket.js';
 
 let t: TestApp;
@@ -14,7 +23,12 @@ beforeAll(async () => {
   await resetDatabase(testPool());
   t = await buildTestApp();
   server = createServer(t.app);
-  realtime = attachRealtime({ httpServer: server, events: t.container.events, tokens: t.container.tokens, logger: t.container.logger });
+  realtime = attachRealtime({
+    httpServer: server,
+    events: t.container.events,
+    tokens: t.container.tokens,
+    logger: t.container.logger,
+  });
   await new Promise<void>((r) => server.listen(0, r));
   url = `http://localhost:${(server.address() as AddressInfo).port}`;
 });
@@ -26,7 +40,9 @@ afterAll(async () => {
 async function login() {
   const { agent } = await signedInAgent(t.app);
   const res = await agent.get('/api/v1/auth/me');
-  const cookie = (await agent.post('/api/v1/auth/login').send({ email: res.body.data.email, password: 'Password123!' })).headers['set-cookie']![0]!.split(';')[0]!;
+  const cookie = (
+    await agent.post('/api/v1/auth/login').send({ email: res.body.data.email, password: 'Password123!' })
+  ).headers['set-cookie']![0]!.split(';')[0]!;
   return { agent, cookie };
 }
 
@@ -49,7 +65,7 @@ describe('realtime', () => {
     await expect(open('sp_session=forged')).rejects.toThrow(/unauthorized/);
   });
 
-  it('pushes typing, the AI reply and appointment events to the user\'s room only', async () => {
+  it("pushes typing, the AI reply and appointment events to the user's room only", async () => {
     const me = await login();
     const stranger = await login();
     const mine = await open(me.cookie);
@@ -60,7 +76,10 @@ describe('realtime', () => {
     const session = await me.agent.post('/api/v1/chat/sessions').expect(201);
     const typing = next<{ isTyping: boolean }>(mine, 'chat:typing');
     const reply = next<{ message: { role: string; metadata: { card?: string } }; state: string }>(mine, 'chat:message');
-    await me.agent.post(`/api/v1/chat/sessions/${session.body.data.id}/messages`).send({ content: 'checkup tomorrow at 9am' }).expect(202);
+    await me.agent
+      .post(`/api/v1/chat/sessions/${session.body.data.id}/messages`)
+      .send({ content: 'checkup tomorrow at 9am' })
+      .expect(202);
 
     expect((await typing).isTyping).toBe(true);
     const pushed = await reply;

@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { createPool } from './pool.js';
+import { createPool, directUrl } from './pool.js';
 import { runMigrations } from './migrator.js';
 import { dbDir } from './paths.js';
 
@@ -8,7 +8,7 @@ if (!url) {
   console.error('DATABASE_URL is not set');
   process.exit(1);
 }
-const pool = createPool({ connectionString: url, max: 1 });
+const pool = createPool({ connectionString: directUrl(url), max: 1 });
 try {
   await runMigrations(pool, join(dbDir(), 'migrations'));
   console.log('migrations up to date');

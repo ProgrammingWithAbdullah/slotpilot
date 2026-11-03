@@ -54,8 +54,7 @@ const responseSchema: ResponseSchema = {
 };
 
 export type ExtractionResult =
-  | { ok: true; extraction: Extraction }
-  | { ok: false; reason: 'ai_error' | 'invalid_output' };
+  { ok: true; extraction: Extraction } | { ok: false; reason: 'ai_error' | 'invalid_output' };
 
 export interface ExtractionContext {
   business: BusinessDto;
@@ -71,11 +70,7 @@ export interface ExtractionContext {
  * Turns conversation text into candidate booking fields. It knows about prompts and JSON,
  * and nothing about business rules or the database (apart from logging its own calls).
  */
-export function createBookingExtractor(deps: {
-  provider: LlmProvider;
-  aiLog: AiLogRepository;
-  logger: Logger;
-}) {
+export function createBookingExtractor(deps: { provider: LlmProvider; aiLog: AiLogRepository; logger: Logger }) {
   async function log(entry: AiInteraction) {
     deps.logger.info(
       {
@@ -150,7 +145,15 @@ export function createBookingExtractor(deps: {
       try {
         json = JSON.parse(raw);
       } catch {
-        await log({ ...base, model, status: 'invalid_output', latencyMs, rawOutput: raw, errorMessage: 'not JSON', ...usageOf(usage) });
+        await log({
+          ...base,
+          model,
+          status: 'invalid_output',
+          latencyMs,
+          rawOutput: raw,
+          errorMessage: 'not JSON',
+          ...usageOf(usage),
+        });
         return { ok: false, reason: 'invalid_output' };
       }
       const parsed = extractionSchema.safeParse(json);
@@ -167,7 +170,15 @@ export function createBookingExtractor(deps: {
         return { ok: false, reason: 'invalid_output' };
       }
 
-      await log({ ...base, model, status: 'ok', latencyMs, rawOutput: raw, parsedOutput: parsed.data, ...usageOf(usage) });
+      await log({
+        ...base,
+        model,
+        status: 'ok',
+        latencyMs,
+        rawOutput: raw,
+        parsedOutput: parsed.data,
+        ...usageOf(usage),
+      });
       return { ok: true, extraction: parsed.data };
     },
   };

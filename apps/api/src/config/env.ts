@@ -19,7 +19,12 @@ const envSchema = z
     DATABASE_SSL: booleanString,
     DB_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
-    JWT_EXPIRES_IN_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(24),
+    JWT_EXPIRES_IN_HOURS: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 30)
+      .default(24),
     DEFAULT_BUSINESS_SLUG: z.string().default('bright-smile-dental'),
     AI_PROVIDER: z.enum(['gemini', 'mock']).default('gemini'),
     GEMINI_API_KEY: z.string().optional(),

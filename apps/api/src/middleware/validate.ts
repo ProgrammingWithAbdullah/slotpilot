@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
-import { z, type ZodType } from 'zod';
+import type { z } from 'zod';
+import { type ZodType } from 'zod';
 import type { FieldErrors } from '@slotpilot/shared';
 import { ValidationError } from '../lib/errors.js';
 

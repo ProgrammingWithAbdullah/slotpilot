@@ -17,7 +17,9 @@ describe('HTTP behaviour', () => {
 
   it('returns the standard error shape for unknown routes', async () => {
     const res = await request(t.app).get('/api/v1/nope').expect(404);
-    expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Route GET /nope not found', requestId: expect.any(String) } });
+    expect(res.body).toEqual({
+      error: { code: 'NOT_FOUND', message: 'Route GET /nope not found', requestId: expect.any(String) },
+    });
   });
 
   it('reuses a safe incoming X-Request-Id', async () => {
@@ -27,13 +29,18 @@ describe('HTTP behaviour', () => {
   });
 
   it('rejects malformed JSON with 400', async () => {
-    const res = await request(t.app).post('/api/v1/auth/login').set('content-type', 'application/json').send('{"email":');
+    const res = await request(t.app)
+      .post('/api/v1/auth/login')
+      .set('content-type', 'application/json')
+      .send('{"email":');
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('rejects bodies over 16kb with 413', async () => {
-    const res = await request(t.app).post('/api/v1/auth/login').send({ email: 'a@b.co', password: 'x'.repeat(20_000) });
+    const res = await request(t.app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'a@b.co', password: 'x'.repeat(20_000) });
     expect(res.status).toBe(413);
     expect(res.body.error.code).toBe('PAYLOAD_TOO_LARGE');
   });

@@ -1,11 +1,5 @@
 import { DateTime } from 'luxon';
-import type {
-  BookingDraft,
-  BusinessDto,
-  ChatState,
-  MessageMetadata,
-  ServiceDto,
-} from '@slotpilot/shared';
+import type { BookingDraft, BusinessDto, ChatState, MessageMetadata, ServiceDto } from '@slotpilot/shared';
 import type { EventBus } from '../../lib/events.js';
 import type { Logger } from '../../lib/logger.js';
 import type { ServicesRepository } from '../catalog/services.repository.js';
@@ -13,14 +7,7 @@ import type { AvailabilityService } from '../catalog/availability.service.js';
 import { checkSlotRules, describeHours, formatDate, formatTime, toIso } from '../catalog/availability.js';
 import type { BookingExtractor, Extraction } from '../ai/booking-extractor.js';
 import type { ChatRepository, SessionRecord } from './chat.repository.js';
-import {
-  NO_PROGRESS_LIMIT,
-  applyExtraction,
-  draftStart,
-  listAnd,
-  missingFields,
-  type Issue,
-} from './booking-draft.js';
+import { NO_PROGRESS_LIMIT, applyExtraction, draftStart, listAnd, missingFields, type Issue } from './booking-draft.js';
 
 /** How much conversation the model sees. Facts older than this live on in the structured draft. */
 export const HISTORY_WINDOW = 10;
@@ -57,11 +44,17 @@ export function createBookingAssistant(deps: {
   function welcome(): { content: string; metadata: MessageMetadata } {
     return {
       content: `Hi! I'm the ${business.name} booking assistant. Tell me what you'd like to book and when, for example "a cleaning tomorrow at 3pm".`,
-      metadata: { suggestions: ['Book a checkup tomorrow morning', 'What services do you offer?', 'Cleaning next Monday at 11am'] },
+      metadata: {
+        suggestions: ['Book a checkup tomorrow morning', 'What services do you offer?', 'Cleaning next Monday at 11am'],
+      },
     };
   }
 
-  function fallback(draft: BookingDraft, reason: NonNullable<MessageMetadata['fallbackReason']>, intro: string): Pick<TurnDecision, 'content' | 'metadata'> {
+  function fallback(
+    draft: BookingDraft,
+    reason: NonNullable<MessageMetadata['fallbackReason']>,
+    intro: string,
+  ): Pick<TurnDecision, 'content' | 'metadata'> {
     const hasDraft = Boolean(draft.serviceId || draft.date || draft.time);
     return {
       content: `${intro} ${hasDraft ? "You can finish in the booking form; I've filled in what I have so far." : 'You can use the booking form instead.'}`,
@@ -76,7 +69,10 @@ export function createBookingAssistant(deps: {
     return slots.slice(0, 4).map((s) => formatTime(DateTime.fromISO(s, { zone: tz })));
   }
 
-  async function nextQuestion(services: ServiceDto[], draft: BookingDraft): Promise<{ text: string; suggestions: string[] }> {
+  async function nextQuestion(
+    services: ServiceDto[],
+    draft: BookingDraft,
+  ): Promise<{ text: string; suggestions: string[] }> {
     const missing = missingFields(draft);
     if (missing[0] === 'service') {
       return {
@@ -85,7 +81,10 @@ export function createBookingAssistant(deps: {
       };
     }
     if (missing[0] === 'date') {
-      return { text: `What day suits you for your ${draft.serviceName}? We're open ${describeHours(business)}.`, suggestions: ['Tomorrow', 'This Saturday', 'Next Monday'] };
+      return {
+        text: `What day suits you for your ${draft.serviceName}? We're open ${describeHours(business)}.`,
+        suggestions: ['Tomorrow', 'This Saturday', 'Next Monday'],
+      };
     }
     const suggestions = await timeSuggestions(services, draft);
     const day = DateTime.fromISO(draft.date!, { zone: tz });
@@ -111,7 +110,12 @@ export function createBookingAssistant(deps: {
     const start = draftStart(draft, tz);
     if (!service || !start) return { draft, alternatives: [] };
 
-    const problem = checkSlotRules({ business, durationMinutes: service.durationMinutes, startsAt: start, now: deps.now() });
+    const problem = checkSlotRules({
+      business,
+      durationMinutes: service.durationMinutes,
+      startsAt: start,
+      now: deps.now(),
+    });
     if (problem) {
       issues.push({ field: 'time', message: `${problem.message}.`.replace('..', '.') });
       const { time: _t, ...rest } = draft;
@@ -130,10 +134,16 @@ export function createBookingAssistant(deps: {
     // A finished booking starts a fresh draft for the next one.
     const startingDraft: BookingDraft = session.state === 'booked' ? {} : session.draft;
     const failedTurns = session.state === 'booked' ? 0 : session.failedTurns;
-    const baseState: ChatState = session.state === 'booked' || session.state === 'closed' ? 'collecting' : session.state;
+    const baseState: ChatState =
+      session.state === 'booked' || session.state === 'closed' ? 'collecting' : session.state;
 
     if (!deps.aiEnabled) {
-      return { draft: startingDraft, state: baseState, failedTurns, ...fallback(startingDraft, 'ai_disabled', 'The assistant is offline right now.') };
+      return {
+        draft: startingDraft,
+        state: baseState,
+        failedTurns,
+        ...fallback(startingDraft, 'ai_disabled', 'The assistant is offline right now.'),
+      };
     }
 
     const services = await deps.services.listActive(business.id);
@@ -208,7 +218,12 @@ export function createBookingAssistant(deps: {
     // A turn that changed nothing in the draft is "no progress". Two in a row -> offer the form.
     const nextFailed = applied.changed ? 0 : failedTurns + 1;
     if (nextFailed >= NO_PROGRESS_LIMIT) {
-      return { draft, state: 'collecting', failedTurns: nextFailed, ...fallback(draft, 'no_progress', "Let's make this easier.") };
+      return {
+        draft,
+        state: 'collecting',
+        failedTurns: nextFailed,
+        ...fallback(draft, 'no_progress', "Let's make this easier."),
+      };
     }
 
     const q = await nextQuestion(services, draft);

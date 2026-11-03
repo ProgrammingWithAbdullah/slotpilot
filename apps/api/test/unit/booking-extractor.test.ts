@@ -26,7 +26,11 @@ const ctx = {
 function setup(complete: LlmProvider['complete']) {
   const insert = vi.fn().mockResolvedValue(undefined);
   const provider: LlmProvider = { name: 'fake', defaultModel: 'fake-1', complete: vi.fn(complete) };
-  const extractor = createBookingExtractor({ provider, aiLog: { insert }, logger: createLogger({ level: 'silent', pretty: false }) });
+  const extractor = createBookingExtractor({
+    provider,
+    aiLog: { insert },
+    logger: createLogger({ level: 'silent', pretty: false }),
+  });
   return { extractor, insert, provider };
 }
 
@@ -44,7 +48,11 @@ describe('BookingExtractor', () => {
     const r = await extractor.extract(ctx);
     expect(r).toEqual({
       ok: true,
-      extraction: { intent: 'book', fields: { service: 'Cleaning', date: '2030-01-08', time: '15:00', notes: null }, reply: 'Sure!' },
+      extraction: {
+        intent: 'book',
+        fields: { service: 'Cleaning', date: '2030-01-08', time: '15:00', notes: null },
+        reply: 'Sure!',
+      },
     });
     expect(insert).toHaveBeenCalledWith(expect.objectContaining({ status: 'ok', provider: 'fake', sessionId: 'sess' }));
     const call = vi.mocked(provider.complete).mock.calls[0]![0];
@@ -56,7 +64,9 @@ describe('BookingExtractor', () => {
   it('rejects non-JSON output', async () => {
     const { extractor, insert } = setup(async () => ({ model: 'm', text: 'Sure, booked you in!' }));
     expect(await extractor.extract(ctx)).toEqual({ ok: false, reason: 'invalid_output' });
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ status: 'invalid_output', rawOutput: 'Sure, booked you in!' }));
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'invalid_output', rawOutput: 'Sure, booked you in!' }),
+    );
   });
 
   it('rejects JSON with the wrong shape', async () => {
@@ -73,7 +83,10 @@ describe('BookingExtractor', () => {
   });
 
   it('still answers if writing the log fails', async () => {
-    const { extractor, insert } = setup(async () => ({ model: 'm', text: '{"intent":"smalltalk","fields":{},"reply":"hi"}' }));
+    const { extractor, insert } = setup(async () => ({
+      model: 'm',
+      text: '{"intent":"smalltalk","fields":{},"reply":"hi"}',
+    }));
     insert.mockRejectedValueOnce(new Error('db down'));
     await expect(extractor.extract(ctx)).resolves.toMatchObject({ ok: true });
   });

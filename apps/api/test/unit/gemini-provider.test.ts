@@ -72,9 +72,9 @@ describe('Gemini provider', () => {
   });
 
   it('treats an empty candidate (e.g. safety block) as an error', async () => {
-    const fetchFn = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ candidates: [{ finishReason: 'SAFETY' }] }), { status: 200 }),
-    );
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ candidates: [{ finishReason: 'SAFETY' }] }), { status: 200 }));
     const p = createGeminiProvider({ apiKey: 'k', models: ['m1'], timeoutMs: 1000, fetchFn, sleep: noSleep });
     await expect(p.complete(req)).rejects.toThrow(/SAFETY/);
   });

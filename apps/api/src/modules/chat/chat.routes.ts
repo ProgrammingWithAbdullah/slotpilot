@@ -9,11 +9,7 @@ import { validate } from '../../middleware/validate.js';
 import type { RateLimiters } from '../../middleware/rate-limit.js';
 import type { ChatService } from './chat.service.js';
 
-export function chatRoutes(deps: {
-  chat: ChatService;
-  requireAuth: RequestHandler;
-  limiters: RateLimiters;
-}): Router {
+export function chatRoutes(deps: { chat: ChatService; requireAuth: RequestHandler; limiters: RateLimiters }): Router {
   const router = Router();
   router.use(deps.requireAuth);
 
