@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+!.env.example
+playwright-report/
+test-results/
+.DS_Store
+*.log
+# Private interview / planning material
+planning/

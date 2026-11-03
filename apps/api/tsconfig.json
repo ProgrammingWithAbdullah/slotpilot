@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "customConditions": ["development"],
+    "types": ["node"],
+    "outDir": "dist",
+    "noEmit": true
+  },
+  "include": ["src", "test", "scripts", "vitest.config.ts"]
+}
